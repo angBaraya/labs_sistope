@@ -1,7 +1,0 @@
-# generated_at: 2025-12-09T11:03:49-03:00
-# user: angel
-# host: ullr
-
-command	nproc	cpu_avg	cpu_max	mem_avg	mem_max
-electron	20	16.6	31.7	2.0	2.5
-claude	5	23.1	23.2	3.2	3.2
