@@ -1,0 +1,18 @@
+# generated_at: 2025-12-12T15:30:35-03:00
+# user: angel
+# host: ullr
+
+command	nproc	cpu_avg	cpu_max	mem_avg	mem_max
+Web Content	6	0.1	0.1	0.5	0.5
+Hyprland	2	2.9	2.9	0.9	0.9
+electron	16	1.8	4.5	1.4	2.5
+Isolated Web Co	6	7.2	21.4	1.7	2.3
+cups-browsed	2	0.2	0.2	0.1	0.1
+firefox	4	7.4	10.5	3.9	4.1
+elephant	2	0.1	0.1	1.2	1.2
+ghostty	2	2.4	2.4	2.0	2.0
+walker	2	0.2	0.2	0.8	0.8
+waybar	2	0.1	0.1	0.3	0.3
+Privileged Cont	4	0.2	0.4	0.9	0.9
+dirmngr	2	1.0	1.0	0.1	0.1
+WebExtensions	4	0.6	0.7	1.1	1.5

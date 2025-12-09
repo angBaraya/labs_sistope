@@ -8,6 +8,7 @@ eval set -- "$ARGS"
 I=""
 T=""
 
+
 while [ "$1" != "--" ]; do
   case "$1" in
     -i) I="$2"; shift 2 ;; #asigna i a la variable I
@@ -24,7 +25,7 @@ while [ "$SECONDS" -lt "$T" ]; do #ejecuta el bloque dentro del while mientras s
   ps -eo pid=,uid=,comm=,pcpu=,pmem= --sort=-%cpu --no-headers | #ejecuta ps para listar los procesos
   awk '
     {
-      # reconstruye comm si tiene espacios
+  3    # reconstruye comm si tiene espacios
       comm = $3 
       #accede a la primera palabra del coom
       for (i = 4; i <= NF - 2; i++) comm = comm " " $i #llega hasta el antepenultima opcion, la cual sera la ultima palabra del comm
