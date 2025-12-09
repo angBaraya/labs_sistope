@@ -4,9 +4,9 @@
  *          [NOMBRE2] - [RUT2]
  * Fecha: Diciembre 2025
  *
- * Descripción: Programa principal que lee una línea de comando desde stdin,
- *              parsea los scripts y sus argumentos, y ejecuta un pipeline
- *              usando fork(), pipe(), dup2() y exec().
+ * Descripción: Programa principal que recibe argumentos de línea de comando,
+ *              reconstruye el pipeline, parsea los scripts y sus argumentos,
+ *              y ejecuta el pipeline usando fork(), pipe(), dup2() y exec().
  */
 
 #include <stdio.h>
@@ -19,21 +19,33 @@
 
 // Entradas: int argc - número de argumentos, char *argv[] - array de argumentos
 // Salidas: int - EXIT_SUCCESS si éxito, EXIT_FAILURE si error
-// Descripción: Función principal que lee la línea de comando desde stdin,
+// Descripción: Función principal que reconstruye la línea de comando desde argv,
 //              la parsea y ejecuta el pipeline de scripts
 int main(int argc, char *argv[]) {
-    char line[MAX_LINE_LENGTH];
-
-    // Leer línea de comando desde stdin
-    if (fgets(line, sizeof(line), stdin) == NULL) {
-        fprintf(stderr, "Error: No se pudo leer la línea de comando\n");
+    // Verificar que haya argumentos
+    if (argc < 2) {
+        fprintf(stderr, "Uso: %s script1 args | script2 args | ... | scriptN args\n", argv[0]);
+        fprintf(stderr, "Ejemplo: %s generator.sh -i 1 -t 10 \\| preprocess.sh \\| filter.sh -c 5\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    // Remover newline final si existe
-    size_t len = strlen(line);
-    if (len > 0 && line[len-1] == '\n') {
-        line[len-1] = '\0';
+    // Reconstruir la línea de comando concatenando todos los argumentos
+    char line[MAX_LINE_LENGTH];
+    line[0] = '\0';
+
+    for (int i = 1; i < argc; i++) {
+        // Verificar que no excedamos el buffer
+        if (strlen(line) + strlen(argv[i]) + 2 > MAX_LINE_LENGTH) {
+            fprintf(stderr, "Error: Línea de comando demasiado larga\n");
+            return EXIT_FAILURE;
+        }
+
+        strcat(line, argv[i]);
+
+        // Agregar espacio entre argumentos (excepto el último)
+        if (i < argc - 1) {
+            strcat(line, " ");
+        }
     }
 
     // Verificar que la línea no esté vacía

@@ -80,46 +80,54 @@ Command* tokenize_command(char *cmd_str) {
     cmd->argc = 0;
 
     // Crear copia del string para tokenizar
-    char *cmd_copy = safe_strdup(cmd_str);
-    cmd_copy = trim_whitespace(cmd_copy);
+    char *cmd_copy_original = safe_strdup(cmd_str);
+    char *cmd_copy = trim_whitespace(cmd_copy_original);
 
     // Contar tokens
     char *temp_copy = safe_strdup(cmd_copy);
-    char *token = strtok(temp_copy, " \t");
+    char *saveptr1;
+    char *token = strtok_r(temp_copy, " \t", &saveptr1);
     int token_count = 0;
     while (token != NULL) {
         token_count++;
-        token = strtok(NULL, " \t");
+        token = strtok_r(NULL, " \t", &saveptr1);
     }
     free(temp_copy);
 
     if (token_count == 0) {
-        free(cmd_copy);
+        free(cmd_copy_original);
         free(cmd);
         return NULL;
     }
 
     // Tokenizar para extraer script y argumentos
-    token = strtok(cmd_copy, " \t");
+    char *saveptr2;
+    token = strtok_r(cmd_copy, " \t", &saveptr2);
     char *script_name = token;
 
     // Manejar rutas de scripts
     if (script_name[0] == '/') {
         // Ruta absoluta
         cmd->script_path = safe_strdup(script_name);
-    } else if (strncmp(script_name, "./", 2) == 0) {
-        // Reemplazar ./ con ../L1/
-        char path[512];
-        snprintf(path, sizeof(path), "../L1/%s", script_name + 2);
-        cmd->script_path = safe_strdup(path);
-    } else if (strncmp(script_name, "../", 3) == 0) {
-        // Ya tiene ../, usar tal cual
+    } else if (strncmp(script_name, "./", 2) == 0 || strncmp(script_name, "../", 3) == 0) {
+        // Ya tiene ./ o ../, usar tal cual
         cmd->script_path = safe_strdup(script_name);
     } else {
-        // Nombre relativo sin path, agregar ../L1/
-        char path[512];
-        snprintf(path, sizeof(path), "../L1/%s", script_name);
-        cmd->script_path = safe_strdup(path);
+        // Nombre relativo sin path
+        // Primero intentar en directorio actual
+        char local_path[512];
+        snprintf(local_path, sizeof(local_path), "./%s", script_name);
+
+        // Verificar si existe en directorio actual
+        if (access(local_path, F_OK) == 0) {
+            // Existe localmente
+            cmd->script_path = safe_strdup(local_path);
+        } else {
+            // Intentar en ../L1/
+            char l1_path[512];
+            snprintf(l1_path, sizeof(l1_path), "../L1/%s", script_name);
+            cmd->script_path = safe_strdup(l1_path);
+        }
     }
 
     // Extraer argumentos
@@ -129,14 +137,14 @@ Command* tokenize_command(char *cmd_str) {
         error_exit("Error al asignar memoria para argumentos");
     }
 
-    token = strtok(NULL, " \t");
+    token = strtok_r(NULL, " \t", &saveptr2);
     while (token != NULL) {
         cmd->args[cmd->argc] = safe_strdup(token);
         cmd->argc++;
-        token = strtok(NULL, " \t");
+        token = strtok_r(NULL, " \t", &saveptr2);
     }
 
-    free(cmd_copy);
+    free(cmd_copy_original);
     return cmd;
 }
 
@@ -174,8 +182,9 @@ Pipeline* parse_command_line(char *line) {
         error_exit("Error al asignar memoria para comandos");
     }
 
-    // Tokenizar por pipes
-    char *cmd_str = strtok(line_copy, "|");
+    // Tokenizar por pipes usando strtok_r para evitar problemas con strtok anidado
+    char *saveptr;
+    char *cmd_str = strtok_r(line_copy, "|", &saveptr);
     int idx = 0;
 
     while (cmd_str != NULL && idx < num_commands) {
@@ -185,7 +194,7 @@ Pipeline* parse_command_line(char *line) {
             free(cmd);  // Solo liberamos la estructura, no el contenido
             idx++;
         }
-        cmd_str = strtok(NULL, "|");
+        cmd_str = strtok_r(NULL, "|", &saveptr);
     }
 
     pipeline->num_commands = idx;

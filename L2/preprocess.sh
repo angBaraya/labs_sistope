@@ -2,11 +2,12 @@
 
 
 while read -r linea; do #lee desde la entrada stdin de forma que se eviten  caracteres especiales
-  # Separar la fecha y los datos del proceso
-  # Extraer los datos del proceso (últimos campos con formato PID|UID|COMM|PCPU|PMEM)
-  info=$(echo "$linea" | grep -oP '\d+\|.+$')
-  # Extraer la fecha (todo antes de los datos del proceso)
-  fecha=$(echo "$linea" | sed "s/ $info$//")
+  # Normalizar espacios múltiples a uno solo (para días de un dígito como " 9" -> "9")
+  linea=$(echo "$linea" | tr -s ' ')
+  
+  # Separar la fecha (primeros 6 campos)
+  fecha=$(echo "$linea" | awk '{print $1, $2, $3, $4, $5, $6}')
+  info=$(echo "$linea" | cut -d' ' -f7-)
 
   # transformación de fecha a ISO 8601
   fecha_iso=$(LC_ALL=C date --date="$fecha" --iso-8601=seconds 2>/dev/null)

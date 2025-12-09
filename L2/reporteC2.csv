@@ -1,0 +1,15 @@
+# generated_at: 2025-12-09T11:22:35-03:00
+# user: angel
+# host: ullr
+
+command	nproc	cpu_avg	cpu_max	mem_avg	mem_max
+Hyprland	4	1.4	1.4	0.9	0.9
+Isolated Web Co	16	0.5	1.4	1.9	2.4
+electron	20	3.4	11.3	1.9	3.0
+nautilus	4	0.1	0.1	2.2	2.2
+firefox	8	1.6	1.8	4.5	4.7
+ghostty	4	2.0	2.0	2.6	2.6
+file:// Content	4	0.2	0.2	1.7	1.7
+ghostwriter	4	0.6	0.6	2.7	2.7
+QtWebEngineProc	4	0.2	0.2	0.9	0.9
+WebExtensions	4	0.3	0.3	2.2	2.2
