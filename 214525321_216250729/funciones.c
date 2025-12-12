@@ -3,7 +3,6 @@
  * Diego Lefiman - 21.625.072-9
  */
 
-#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,10 +29,12 @@ void error_exit(const char *msg) {
 char* safe_strdup(const char *str) {
     if (str == NULL) return NULL;
     
-    char *dup = strdup(str);
+    int len = strlen(str);
+    char *dup = malloc(len + 1);
     if (dup == NULL) {
         error_exit("Error: No se pudo duplicar el string (memoria llena)");
     }
+    strcpy(dup, str);
     return dup;
 }
 
@@ -43,16 +44,16 @@ char* safe_strdup(const char *str) {
 char* trim_whitespace(char *str) {
     if (str == NULL) return NULL;
 
-    // Avanzamos el puntero mientras haya espacio al inicio
-    while (isspace((unsigned char)*str)) str++;
+    // quitar espacios del inicio
+    while (*str == ' ' || *str == '\t') str++;
 
     if (*str == '\0') return str;
 
-    // Vamos al final y retrocedemos borrando espacios
+    // quitar espacios del final
     char *end = str + strlen(str) - 1;
-    while (end > str && isspace((unsigned char)*end)) end--;
+    while (end > str && (*end == ' ' || *end == '\t')) end--;
 
-    *(end + 1) = '\0'; // Marcamos el nuevo final
+    *(end + 1) = '\0';
 
     return str;
 }
@@ -77,15 +78,14 @@ Command* tokenize_command(char *cmd_str) {
     char *buffer_raw = safe_strdup(cmd_str);
     char *buffer = trim_whitespace(buffer_raw);
 
-    // PASO 1: Contar cuántos tokens (palabras) hay para hacer el malloc
+    // Contar cuántos tokens hay para hacer el malloc
     char *copia_contar = safe_strdup(buffer);
-    char *ptr_seguro;
-    char *token = strtok_r(copia_contar, " \t", &ptr_seguro);
+    char *token = strtok(copia_contar, " \t");
     
     int num_tokens = 0;
     while (token != NULL) {
         num_tokens++;
-        token = strtok_r(NULL, " \t", &ptr_seguro);
+        token = strtok(NULL, " \t");
     }
     free(copia_contar);
 
@@ -96,62 +96,45 @@ Command* tokenize_command(char *cmd_str) {
         return NULL;
     }
 
-    // PASO 2: Extraer los datos reales
-    char *ptr_parseo;
-    token = strtok_r(buffer, " \t", &ptr_parseo);
+    // Extraer el nombre del script
+    token = strtok(buffer, " \t");
     char *nombre_script = token;
 
-    // Lógica para encontrar dónde está el script (Ruta absoluta, relativa o L1)
+    // Buscar el path del script
     if (nombre_script[0] == '/') {
-        cmd->script_path = safe_strdup(nombre_script); // Ruta absoluta
+        // ruta absoluta
+        cmd->script_path = safe_strdup(nombre_script);
     } 
     else if (strncmp(nombre_script, "./", 2) == 0 || strncmp(nombre_script, "../", 3) == 0) {
-        cmd->script_path = safe_strdup(nombre_script); // Ya viene con ruta
+        // ya tiene ruta relativa
+        cmd->script_path = safe_strdup(nombre_script);
     } 
     else {
-        // Probamos primero en el directorio actual ./
+        // está en el mismo directorio, agregar ./
         char path_test[512];
-        snprintf(path_test, sizeof(path_test), "./%s", nombre_script);
-
-        if (access(path_test, F_OK) == 0) {
-            cmd->script_path = safe_strdup(path_test);
-        } else {
-            // Si no está, probamos en la carpeta anterior ../L1/
-            char path_l1[512];
-            snprintf(path_l1, sizeof(path_l1), "../L1/%s", nombre_script);
-            cmd->script_path = safe_strdup(path_l1);
-        }
+        sprintf(path_test, "./%s", nombre_script);
+        cmd->script_path = safe_strdup(path_test);
     }
 
-    // PASO 3: Guardar los argumentos
-    cmd->args = (char**)malloc(sizeof(char*) * num_tokens);
+    // Guardar los argumentos
+    cmd->args = malloc(sizeof(char*) * num_tokens);
     if (!cmd->args) error_exit("Malloc falló en args");
 
-    // Reiniciamos el tokenizado (o seguimos con el resto)
-    // Ojo: el primer token fue el script, pero strtok guarda estado
-    // Necesitamos volver a tokenizar o seguir desde donde quedamos?
-    // Como ya sacamos el nombre, seguimos con los argumentos.
-    
-    // Un detalle: necesitamos guardar los argumentos en el arreglo args.
-    // Voy a volver a tokenizar el string original limpio para ser ordenado y guardar todo.
-    // Esto es un poco redundante pero seguro.
-    
-    free(buffer_raw); // libero el anterior, voy a usar uno nuevo fresco
+    // tokenizar de nuevo para obtener argumentos
+    free(buffer_raw);
     buffer_raw = safe_strdup(cmd_str);
     buffer = trim_whitespace(buffer_raw);
     
-    token = strtok_r(buffer, " \t", &ptr_parseo); // Primer token (script)
-    
-    // Saltamos el script y vamos por los argumentos reales
-    token = strtok_r(NULL, " \t", &ptr_parseo);
+    token = strtok(buffer, " \t"); // primer token es el script, lo saltamos
+    token = strtok(NULL, " \t"); // empezamos con el primer argumento
     
     int i = 0;
     while (token != NULL) {
         cmd->args[i] = safe_strdup(token);
         i++;
-        token = strtok_r(NULL, " \t", &ptr_parseo);
+        token = strtok(NULL, " \t");
     }
-    cmd->argc = i; // Cantidad real de argumentos
+    cmd->argc = i;
 
     free(buffer_raw);
     return cmd;
@@ -181,19 +164,18 @@ Pipeline* parse_command_line(char *line) {
     pipe_struct->commands = (Command*)malloc(sizeof(Command) * total_cmds);
     if (!pipe_struct->commands) error_exit("No hay memoria para array de comandos");
 
-    // Separamos por '|'
-    char *ptr;
-    char *segmento = strtok_r(linea_trabajo, "|", &ptr);
+    // Separar por '|'
+    char *segmento = strtok(linea_trabajo, "|");
     int idx = 0;
 
     while (segmento != NULL && idx < total_cmds) {
         Command *cmd_temp = tokenize_command(segmento);
         if (cmd_temp != NULL) {
             pipe_struct->commands[idx] = *cmd_temp;
-            free(cmd_temp); // Solo liberamos el puntero temporal, el contenido se copió
+            free(cmd_temp);
             idx++;
         }
-        segmento = strtok_r(NULL, "|", &ptr);
+        segmento = strtok(NULL, "|");
     }
 
     pipe_struct->num_commands = idx;

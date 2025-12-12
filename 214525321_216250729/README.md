@@ -2,7 +2,7 @@
 
 ## Como lo hace
 
-El programa lee desde `stdin` una línea de comando que especifica los scripts y sus parámetros, separados por el carácter `|`, y crea la infraestructura de comunicación inter-proceso necesaria para ejecutarlos en paralelo.
+El programa lee desde `stdin` una línea de comando que especifica los scripts y sus parámetros, separados por el carácter `|`, y crea la infraestructura de comunicación inter-proceso necesaria para ejecutarlos en paralelo. También se debe ejecutar la en terminal: 'chmod +x *' para dar permisos de ejecutar los .sh 
 
 
 
